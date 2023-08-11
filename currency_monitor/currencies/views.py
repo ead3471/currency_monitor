@@ -16,9 +16,12 @@ from django.utils import timezone
 from rest_framework.request import Request
 from django.http import HttpResponseBadRequest
 from drf_yasg.utils import swagger_auto_schema
+from django_celery_beat.models import PeriodicTask
+from django.conf import settings
 
+import logging
 
-from tasks import set_retriever_state
+logger = logging.getLogger(__name__)
 
 
 # ===============Ok PART===================
@@ -74,10 +77,26 @@ class StartRetrieving(APIView):
     def post(self, request: Request):
         serializer = SetRetrievingParametersSerializer(data=request.data)
         if serializer.is_valid():
-            set_retriever_state.delay(serializer.validated_data["enable"])
-            return Response(
-                f"Currencies retrieving is {'started' if serializer.validated_data['enable'] else 'stopped'}"
-            )
+            main_task_name = settings.MAIN_SCAN_RATES_TASK_NAME
+            task = PeriodicTask.objects.get(name=main_task_name)
+
+            enable_flag = serializer.validated_data["enable"]
+            if task:
+                logger.info(
+                    f"Set enabled for taks {main_task_name}={enable_flag}"
+                )
+                task.enabled = enable_flag
+                task.save()
+                return Response(
+                    status=status.HTTP_200_OK,
+                    data=f"Main task is {'started' if enable_flag else 'stopped'}",
+                )
+            else:
+                logger.warning(f"Task {main_task_name} is not found")
+                return Response(
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
         else:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,

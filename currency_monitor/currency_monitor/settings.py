@@ -14,6 +14,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import sys
+from celery.schedules import crontab
+from celery import Celery
 
 load_dotenv()
 
@@ -50,7 +52,9 @@ INSTALLED_APPS = [
     "currencies.apps.CurrenciesConfig",
     "rest_framework",
     "drf_yasg",
+    "django_celery_beat",
 ]
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -170,5 +174,37 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
+    },
+}
+
+
+BROKER_URL = "redis://redis:6379/0"
+
+
+app = Celery("CELERY")
+
+
+app.config_from_object("django.conf:settings", namespace="CELERY")
+
+
+app.autodiscover_tasks()
+
+CELERY_IMPORTS = ("tasks",)
+
+CELERY_BROKER_URL = "redis://redis:6379/0"
+
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_SERIALIZER = "json"
+
+
+SCAN_RATES_PERIOD = os.getenv("SCAN_RATES_PERIOD")
+
+MAIN_SCAN_RATES_TASK_NAME = "MAIN_SCAN_RATES_TASK"
+
+CELERY_BEAT_SCHEDULE = {
+    MAIN_SCAN_RATES_TASK_NAME: {
+        "task": "tasks.retrieve_data",
+        "schedule": crontab(minute=f"*/{SCAN_RATES_PERIOD}"),
     },
 }

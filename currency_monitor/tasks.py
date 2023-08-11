@@ -1,38 +1,51 @@
 from celery.schedules import crontab
 import os
 from dotenv import load_dotenv
-from currencies.models import CurrencyValue
+
 from currencies.core import get_current_currency_values
-from currency_monitor.celery import app
+
+# from currency_monitor.celery import app
+from celery import shared_task
+import logging
+
+
+from celery import Celery
+import os
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "currency_monitor.settings")
+
+# app = Celery("currency_monitor")
+# app.config_from_object("django.conf:settings", namespace="CELERY")
+# app.autodiscover_tasks()
 
 
 load_dotenv()
 
-import logging
 
 logger = logging.getLogger(__name__)
 
 SCAN_RATES_PERIOD = os.getenv("SCAN_RATES_PERIOD")
 
-RETRIEVER_TASK_NAME = "coins_info_retriever"
+
 SET_RETRIEVER_STATE_TASK_NAME = "set_retriever_state"
 
-DEFAULT_SCHEDULE_CONFIG = {
-    "RETRIEVE_DATA": {
-        "task": RETRIEVER_TASK_NAME,
-        "schedule": crontab(minute=f"*/{SCAN_RATES_PERIOD}"),
-    },
-}
+RETRIEVER_TASK_NAME = "coins_info_retriever"
+# DEFAULT_SCHEDULE_CONFIG = {
+#     "RETRIEVE_DATA": {
+#         "task": RETRIEVER_TASK_NAME,
+#         "schedule": crontab(minute=f"*/{SCAN_RATES_PERIOD}"),
+#     },
+# }
 
 
-app.conf.beat_schedule = DEFAULT_SCHEDULE_CONFIG
+# app.conf.beat_schedule = DEFAULT_SCHEDULE_CONFIG
+# app.conf.broker_url = "redis://redis:6379/0"
 
 
-app.conf.broker_url = "redis://redis:6379/0"
-
-
-@app.task(name=RETRIEVER_TASK_NAME)
+@shared_task
 def retrieve_data():
+    from currencies.models import CurrencyValue
+
     logger.info("Start retrieving data task")
     coins_for_scan = {
         coin.code: coin
@@ -50,16 +63,3 @@ def retrieve_data():
             coin.timestamp = coin_rate.timestamp
             coin.save()
     logger.info("Task ended")
-
-
-@app.task(name=SET_RETRIEVER_STATE_TASK_NAME)
-def set_retriever_state(enable: bool = True):
-    if enable:
-        logger.info(f"Enable task RETRIEVE_DATA")
-        app.conf.beat_schedule["RETRIEVE_DATA"] = DEFAULT_SCHEDULE_CONFIG
-    else:
-        if "RETRIEVE_DATA" in app.conf.beat_schedule:
-            logger.info(f"Disable task RETRIEVE_DATA")
-            del app.conf.beat_schedule["RETRIEVE_DATA"]
-    logger.info("Current beat_schedule configuration:")
-    logger.info(app.conf.beat_schedule)
