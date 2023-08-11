@@ -6,6 +6,7 @@ from currencies.views import (
     UpdateCurrencyRate,
     GetCurrencyHistory,
     GetCurrencyDif,
+    StartRetrieving,
 )
 from rest_framework.permissions import AllowAny
 
@@ -33,6 +34,11 @@ urlpatterns = [
     path(
         "api/currency/<str:code>/dif",
         GetCurrencyDif.as_view(),
+        name="get-currency-dif",
+    ),
+    path(
+        "api/retrieve",
+        StartRetrieving.as_view(),
         name="get-currency-dif",
     ),
     path(

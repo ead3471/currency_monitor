@@ -9,7 +9,7 @@ from django.db.models import (
 
 
 class CurrencyValue(models.Model):
-    name = CharField(max_length=10, unique=True, verbose_name="Currency name")
+    name = CharField(max_length=10, verbose_name="Currency name", null=True)
     code = CharField(
         max_length=3, unique=True, verbose_name="Currency short code"
     )

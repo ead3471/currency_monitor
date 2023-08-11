@@ -1,26 +1,96 @@
 from rest_framework.views import APIView
-from .core import get_current_currency_values, get_currency_info
+from .core import get_current_currency_value, get_currency_info
 from .models import CurrencyValue
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .serializers import (
     HistoricalRecordSerializer,
-    CurrencyValueSerializer,
+    GetCurrencyValueSerializer,
     CurrencyDiffSerializer,
+    SetRetrievingParametersSerializer,
 )
 from dataclasses import asdict
 from datetime import datetime
 from django.utils import timezone
+from rest_framework.request import Request
+from django.http import HttpResponseBadRequest
+from drf_yasg.utils import swagger_auto_schema
+
+
+from tasks import set_retriever_state
+
+
+# ===============Ok PART===================
+class GetCurrencyHistory(APIView):
+    @swagger_auto_schema(
+        responses={
+            200: HistoricalRecordSerializer,
+            404: "Coin is not found",
+        },
+        operation_description="This is the GET endpoint returning list of historical data for given currency",
+    )
+    def get(self, request, code):
+        currency = get_object_or_404(
+            CurrencyValue,
+            code=code,
+        )
+        history_records = currency.history.all()
+        serializer = HistoricalRecordSerializer(
+            instance=history_records, many=True
+        )
+        return Response(serializer.data)
+
+
+class GetCurrencyDif(APIView):
+    @swagger_auto_schema(
+        operation_description="This is the GET endpoint returning differense between actual and historical data for given currency",
+        responses={
+            200: CurrencyDiffSerializer,
+            404: "Object is not found",
+        },
+    )
+    def get(self, request, code):
+        currency = get_object_or_404(CurrencyValue, code=code)
+        current_course = asdict(get_current_currency_value(code))
+        last_course = currency.history.latest()
+        print(type(last_course.rate))
+        serializer = CurrencyDiffSerializer(
+            data={
+                "current_course": current_course,
+                "latest_course": HistoricalRecordSerializer(last_course).data,
+            }
+        )
+        serializer.is_valid()
+        return Response(serializer.data)
+
+
+class StartRetrieving(APIView):
+    @swagger_auto_schema(
+        request_body=SetRetrievingParametersSerializer,
+        operation_description="This is the POST endpoint for start or stop retrieving data from server celery task.",
+        responses={200: "Success response description"},
+    )
+    def post(self, request: Request):
+        serializer = SetRetrievingParametersSerializer(data=request.data)
+        if serializer.is_valid():
+            set_retriever_state.delay(serializer.validated_data["enable"])
+            return Response(
+                f"Currencies retrieving is {'started' if serializer.validated_data['enable'] else 'stopped'}"
+            )
+        else:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data=serializer.errors,
+            )
+
+
+# ===============IN Process===========
 
 
 class UpdateCurrencyRate(APIView):
     def get(self, request, code: str):
-        recieved_currency_rate = get_current_currency_values(
-            [
-                code,
-            ]
-        )[0]
+        recieved_currency_rate = get_current_currency_value(code)
         currency = CurrencyValue.objects.filter(code=code).first()
 
         if currency:
@@ -42,7 +112,7 @@ class UpdateCurrencyRate(APIView):
                 ),
             )
             currency.save()
-        serializer = CurrencyValueSerializer(instance=currency)
+        serializer = GetCurrencyValueSerializer(instance=currency)
         return Response(serializer.data)
 
     def delete(self, request, code: str):
@@ -51,33 +121,7 @@ class UpdateCurrencyRate(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class GetCurrencyHistory(APIView):
-    def get(self, request, code):
-        currency = get_object_or_404(CurrencyValue, code=code)
-        history_records = currency.history.all()
-        serializer = HistoricalRecordSerializer(
-            instance=history_records, many=True
-        )
-        return Response(serializer.data)
-
-
-class GetCurrencyDif(APIView):
-    def get(self, request, code):
-        currency = get_object_or_404(CurrencyValue, code=code)
-        current_course = asdict(
-            get_current_currency_values(
-                [
-                    code,
-                ]
-            )[0]
-        )
-        last_course = currency.history.latest()
-        print(type(last_course.rate))
-        serializer = CurrencyDiffSerializer(
-            data={
-                "current_course": current_course,
-                "latest_course": HistoricalRecordSerializer(last_course).data,
-            }
-        )
-        serializer.is_valid()
-        return Response(serializer.data)
+class MarkCoinToScan(APIView):
+    def post(self, request, codes):
+        coins = CurrencyValue.objects.all()
+        return Response(GetCurrencyValueSerializer(coins, many=True).data)

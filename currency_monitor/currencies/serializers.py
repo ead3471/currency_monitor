@@ -15,7 +15,7 @@ class HistoricalRecordSerializer(serializers.ModelSerializer):
         return representation
 
 
-class CurrencyValueSerializer(serializers.ModelSerializer):
+class GetCurrencyValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyValue
         fields = "__all__"
@@ -41,3 +41,7 @@ class CurrencyDiffSerializer(serializers.Serializer):
             "current_course": validated_data.get("current_course"),
         }
         return combined_data
+
+
+class SetRetrievingParametersSerializer(serializers.Serializer):
+    enable = serializers.BooleanField()
