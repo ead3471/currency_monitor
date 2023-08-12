@@ -2,26 +2,17 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from django.utils import timezone
-from currencies.core import (
+from api.core import (
     get_coins_rates,
     get_coin_info,
     get_coins_info,
 )
 
-# from currency_monitor.celery import app
 from celery import shared_task
 import logging
 
 
-from celery import Celery
-import os
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "currency_monitor.settings")
-
-# app = Celery("currency_monitor")
-# app.config_from_object("django.conf:settings", namespace="CELERY")
-# app.autodiscover_tasks()
-
 
 load_dotenv()
 

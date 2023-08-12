@@ -3,7 +3,7 @@ from django.urls import path, include
 
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from currencies.views import (
+from api.views import (
     EnableRetrieving,
     ForceRetrieving,
     RetrieveForGivenCodes,
@@ -15,6 +15,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authentication import (
     BasicAuthentication,
 )
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 router = DefaultRouter()
@@ -71,7 +73,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("accounts/login/", LoginView.as_view(), name="login"),
     path("accounts/", include("django.contrib.auth.urls")),
-    path("api/v1/admin/", admin.site.urls),
+    path("admin/", admin.site.urls),
     path(
         "api/v1/retrieve/enable",
         EnableRetrieving.as_view(),
