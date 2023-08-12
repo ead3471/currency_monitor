@@ -184,7 +184,13 @@ LOGGING = {
 }
 
 
-BROKER_URL = "redis://redis:6379/0"
+REDIS_CONNECTION_URL = os.getenv("REDIS_CONNECTION_URL")
+
+
+# BROKER_URL = "redis://redis:6379/0"
+BROKER_URL = REDIS_CONNECTION_URL
+
+print(BROKER_URL)
 
 
 app = Celery("CELERY")
@@ -200,7 +206,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_IMPORTS = ("tasks",)
 CELERYD_LOG_LEVEL = "DEBUG"
 
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = BROKER_URL
 
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_RESULT_SERIALIZER = "json"

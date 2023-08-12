@@ -42,8 +42,8 @@ class ForceRetrieving(APIView):
     @swagger_auto_schema(
         request_body=ForceRetrievingSerializer,
         operation_description=(
-            "This is the POST endpoint to force a "
-            "celery task that fetches data from the server."
+            "This is the POST endpoint to force run the "
+            "main celery task that fetches data from the server."
         ),
         responses={200: "Task is delayed"},
     )
@@ -112,7 +112,7 @@ class RetrieveForGivenCodes(APIView):
         operation_description=(
             (
                 "This is the POST endpoint to run a task that "
-                "fetches the rates for given currency codes"
+                "fetches the rates for given in request currency codes"
             ),
         ),
         responses={200: "Task started"},
