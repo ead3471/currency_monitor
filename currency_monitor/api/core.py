@@ -1,12 +1,8 @@
 from dotenv import load_dotenv
 import os
 import requests
-from datetime import datetime
 from dataclasses import dataclass
-
 from decimal import Decimal
-from pytz import timezone
-
 import logging
 
 

@@ -15,8 +15,6 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authentication import (
     BasicAuthentication,
 )
-from django.conf import settings
-from django.conf.urls.static import static
 
 
 router = DefaultRouter()

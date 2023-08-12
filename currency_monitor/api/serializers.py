@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from simple_history.models import HistoricalRecords
 from currencies.models import CurrencyValue
 from decimal import Decimal
 
