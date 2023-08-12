@@ -120,3 +120,7 @@ def get_coins_info(coin_codes: list[str]) -> dict[str, CoinInfo]:
                         f"Currency with code {coin_code} is not supported"
                     )
     return result
+
+
+if __name__ == "__main__":
+    get_coin_info("ADZ")

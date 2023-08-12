@@ -54,21 +54,16 @@ services:
       - redis
 
 
-  # back:
-  #   build:
-  #     context: ../backend/foodgram
-  #     dockerfile: Dockerfile
-  #   restart: always
-  #   volumes:
-  #     - static_value:/app/static/
-  #     - media_value:/app/media/
-  #   ports:
-  #    - "8000:8000"
-  #   depends_on:
-  #     - db
-  #   env_file:
-  #     - ./.env 
-  #   container_name: django-backend
+  back:
+    build:
+      dockerfile: django.Dockerfile
+    restart: always
+    ports:
+     - "8080:8000"
+    depends_on:
+      - db
+    env_file:
+      - ./.env 
 
 volumes:
   db_value:

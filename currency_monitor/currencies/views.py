@@ -3,6 +3,7 @@ from rest_framework.viewsets import ModelViewSet
 from .core import get_coin_rate, get_coin_info
 from .models import CurrencyValue
 from rest_framework.response import Response
+from drf_yasg import openapi
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .serializers import (
@@ -23,68 +24,29 @@ from drf_yasg.utils import swagger_auto_schema
 from django_celery_beat.models import PeriodicTask
 from django.conf import settings
 from tasks import retrieve_data, retrieve_coins_rates, register_coin
+from rest_framework.decorators import action
+
+from django.contrib.auth.views import LoginView as DefaultLoginView
+from django.urls import reverse_lazy
+from django.shortcuts import redirect
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly,
+    IsAuthenticated,
+)
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-# ===============Ok PART===================
-class GetCurrencyHistory(APIView):
-    @swagger_auto_schema(
-        responses={
-            200: HistoricalRecordSerializer,
-            404: "Coin is not found",
-        },
-        operation_description=(
-            "This is the GET endpoint returning "
-            "list of historical data for given currency"
-        ),
-    )
-    def get(self, request, code):
-        currency = get_object_or_404(
-            CurrencyValue,
-            code=code,
-        )
-        history_records = currency.history.all()
-        serializer = HistoricalRecordSerializer(
-            instance=history_records, many=True
-        )
-        return Response(serializer.data)
-
-
-class GetCurrencyDif(APIView):
-    @swagger_auto_schema(
-        operation_description=(
-            "This is the GET endpoint returning differense ",
-            "between actual and historical data for given currency",
-        ),
-        responses={
-            200: CurrencyDiffSerializer,
-            404: "Object is not found",
-        },
-    )
-    def get(self, request, code):
-        currency = get_object_or_404(CurrencyValue, code=code)
-        current_course = asdict(get_coin_rate(code))
-        last_course = currency.history.latest()
-        print(type(last_course.rate))
-        serializer = CurrencyDiffSerializer(
-            data={
-                "current_course": current_course,
-                "latest_course": HistoricalRecordSerializer(last_course).data,
-            }
-        )
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.data)
-
-
 class ForceRetrieving(APIView):
+    permission_classes = (IsAuthenticated,)
+
     @swagger_auto_schema(
         request_body=ForceRetrievingSerializer,
         operation_description=(
-            "This is the POST endpoint for force runnig once a celery task ",
-            "what retrieves data from server.",
+            "This is the POST endpoint to force a "
+            "celery task that fetches data from the server."
         ),
         responses={200: "Task is delayed"},
     )
@@ -110,11 +72,13 @@ class ForceRetrieving(APIView):
 
 
 class EnableRetrieving(APIView):
+    permission_classes = (IsAuthenticated,)
+
     @swagger_auto_schema(
         request_body=EnableRetrievingSerializer,
         operation_description=(
-            "This is the POST endpoint for enable or disable celery task ",
-            "what retrieves data from server.",
+            "This is the POST endpoint to enable or disable the celery "
+            "task that retrieves data from the server."
         ),
         responses={200: "Main task is started/stopped"},
     )
@@ -144,12 +108,14 @@ class EnableRetrieving(APIView):
 
 
 class RetrieveForGivenCodes(APIView):
+    permission_classes = (IsAuthenticated,)
+
     @swagger_auto_schema(
         request_body=RetrieveForGivenCodesSerializer,
         operation_description=(
             (
-                "This is the POST endpoint for starting task "
-                "what retrieves rates for given currencies codes"
+                "This is the POST endpoint to run a task that "
+                "fetches the rates for given currency codes"
             ),
         ),
         responses={200: "Task started"},
@@ -158,7 +124,7 @@ class RetrieveForGivenCodes(APIView):
         codes = request.data["codes"]
         logger.info(
             (
-                "Request for immidiatly data retrieving recieved. "
+                "A request has been received for immediate data retrieval. "
                 f"Codes to retrieve:{codes}"
             )
         )
@@ -169,6 +135,9 @@ class RetrieveForGivenCodes(APIView):
 class CurrencyViewSet(ModelViewSet):
     queryset = CurrencyValue.objects.all()
     lookup_field = "code"
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+    ]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -191,47 +160,69 @@ class CurrencyViewSet(ModelViewSet):
             kwargs={"coin_code": coin_code, "is_scan_on": is_scan_on}
         )
         return Response(
-            status=status.HTTP_200_OK, data="Register task created"
+            status=status.HTTP_200_OK,
+            data=f"Register {coin_code} task created by {self.request.user}",
         )
 
-
-# ===============IN Process===========
-
-
-class UpdateCurrencyRate(APIView):
-    def get(self, request, code: str):
-        recieved_currency_rate = get_coin_rate(code)
-        currency = CurrencyValue.objects.filter(code=code).first()
-
-        if currency:
-            currency.timestamp = datetime.fromtimestamp(
-                recieved_currency_rate.timestamp,
-                tz=timezone.utc,
+    @swagger_auto_schema(
+        # request_body=EmptySerializer,
+        operation_description=(
+            "This is a GET endpoint that returns the difference "
+            "between actual and historical data for a given currency"
+        ),
+        responses={
+            200: CurrencyDiffSerializer,
+            404: "Object is not found",
+        },
+    )
+    @action(detail=True, methods=["GET"])
+    def difference(self, request, code):
+        currency = get_object_or_404(CurrencyValue, code=code)
+        try:
+            current_course = asdict(get_coin_rate(code))
+        except ValueError as ex:
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR, data=str(ex)
             )
-            currency.rate = recieved_currency_rate.rate
-            currency.save()
-        else:
-            currency_info = get_coin_info(code)
-            currency = CurrencyValue(
-                code=currency_info.code,
-                name=currency_info.name,
-                rate=recieved_currency_rate.rate,
-                timestamp=datetime.fromtimestamp(
-                    recieved_currency_rate.timestamp,
-                    tz=timezone.utc,
-                ),
-            )
-            currency.save()
-        serializer = GetCurrencyValueSerializer(instance=currency)
+        last_course = currency.history.latest()
+        print(type(last_course.rate))
+        serializer = CurrencyDiffSerializer(
+            data={
+                "current_course": current_course,
+                "latest_course": HistoricalRecordSerializer(last_course).data,
+            }
+        )
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
-    def delete(self, request, code: str):
-        instance = get_object_or_404(CurrencyValue, code=code)
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    @swagger_auto_schema(
+        responses={
+            200: HistoricalRecordSerializer,
+            404: "Coin is not found",
+        },
+        operation_description=(
+            "This is the GET endpoint returning "
+            "list of historical data for the given currency"
+        ),
+    )
+    @action(detail=True, methods=["GET"])
+    def history(self, request, code):
+        currency = get_object_or_404(
+            CurrencyValue,
+            code=code,
+        )
+        history_records = currency.history.all()
+        serializer = HistoricalRecordSerializer(
+            instance=history_records, many=True
+        )
+        return Response(serializer.data)
 
 
-class MarkCoinToScan(APIView):
-    def post(self, request, codes):
-        coins = CurrencyValue.objects.all()
-        return Response(GetCurrencyValueSerializer(coins, many=True).data)
+class LoginView(DefaultLoginView):
+    def get(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            return redirect("schema-swagger-ui")
+        return super().get(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse_lazy("schema-swagger-ui")

@@ -73,3 +73,7 @@ class PatchCurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyValue
         fields = ["is_scan_on"]
+
+
+class EmptySerializer(serializers.Serializer):
+    pass

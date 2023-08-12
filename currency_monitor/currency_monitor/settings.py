@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "django_celery_beat",
 ]
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -68,14 +68,20 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "currency_monitor.urls"
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates")
+        ],  # Add any additional template directories here if needed
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
+                # ...
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -189,6 +195,8 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 app.autodiscover_tasks()
 
+
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_IMPORTS = ("tasks",)
 CELERYD_LOG_LEVEL = "DEBUG"
 
