@@ -190,6 +190,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 CELERY_IMPORTS = ("tasks",)
+CELERYD_LOG_LEVEL = "DEBUG"
 
 CELERY_BROKER_URL = "redis://redis:6379/0"
 

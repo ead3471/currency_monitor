@@ -43,5 +43,33 @@ class CurrencyDiffSerializer(serializers.Serializer):
         return combined_data
 
 
-class SetRetrievingParametersSerializer(serializers.Serializer):
+class EnableRetrievingSerializer(serializers.Serializer):
     enable = serializers.BooleanField()
+
+
+class ForceRetrievingSerializer(serializers.Serializer):
+    force = serializers.BooleanField()
+
+
+class RetrieveForGivenCodesSerializer(serializers.Serializer):
+    codes = serializers.ListField(child=serializers.CharField())
+
+
+class RegisterCurrencySerializer(serializers.ModelSerializer):
+    code = serializers.CharField(max_length=10)
+    is_scan_on = serializers.BooleanField(default=False)
+
+    class Meta:
+        model = CurrencyValue
+        fields = ["code", "is_scan_on"]
+        extra_kwargs = {
+            "is_scan_on": {"required": False},
+        }
+
+
+class PatchCurrencySerializer(serializers.ModelSerializer):
+    is_scan_on = serializers.BooleanField()
+
+    class Meta:
+        model = CurrencyValue
+        fields = ["is_scan_on"]

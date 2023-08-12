@@ -50,6 +50,8 @@ services:
       dockerfile: celery.Dockerfile
     environment:
       - REDIS_HOST=redis://redis:6379/0
+    depends_on:
+      - redis
 
 
   # back:
