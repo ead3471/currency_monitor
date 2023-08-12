@@ -2,27 +2,10 @@ version: '3.3'
 name: currency_monitor
 
 services:
-
-
-  # nginx:
-  #   image: nginx:1.19.3
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
-  #     - ../frontend/build:/usr/share/nginx/html/
-  #     - ../docs/:/usr/share/nginx/html/api/docs/
-  #     - static_value:/etc/nginx/html/static/
-  #     - media_value:/etc/nginx/html/media/
-  #   container_name: nginx
-  #   depends_on:
-  #     - back
-  #     - frontend
-
   db:
     image: postgres:13.0-alpine
     ports: 
-      - 5432:5432
+      - 54321:5432
     command: postgres -c listen_addresses=*
     restart: always
     volumes:
@@ -33,34 +16,32 @@ services:
 
   redis:
     image: redis:6.0.9-alpine
-    ports:
-      - 6379:6379
 
   flower:
     image: mher/flower:0.9.7
     command: ['flower', '--broker=redis://redis:6379', '--port=5555']
     ports:
-      - 5555:5555
+      - 5557:5555
     depends_on:
       - redis
   
   worker:
     build:
-      context: .
+      context: ../currency_monitor
       dockerfile: celery.Dockerfile
     environment:
       - REDIS_HOST=redis://redis:6379/0
     depends_on:
       - redis
+    env_file:
+      - ./.env 
 
 
   back:
     build:
-      context: .
+      context: ../currency_monitor
       dockerfile: django.Dockerfile
     restart: always
-    ports:
-     - "8000:8000"
     depends_on:
       - db
     env_file:
@@ -73,7 +54,7 @@ services:
       context: .
       dockerfile: nginx.Dockerfile
     ports:
-      - "80:80"
+      - "8082:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - static_value:/usr/share/nginx/html/static/

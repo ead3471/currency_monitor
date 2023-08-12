@@ -103,7 +103,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+#.env
 .venv
 env/
 venv/
@@ -145,5 +145,6 @@ backend/foodgram/static/rest_framework/
 
 
 venv
+*.log
 
 
