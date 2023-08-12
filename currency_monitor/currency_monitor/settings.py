@@ -16,6 +16,7 @@ import os
 import sys
 from celery.schedules import crontab
 from celery import Celery
+from django.urls import reverse_lazy
 
 load_dotenv()
 
