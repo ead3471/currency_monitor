@@ -1,12 +1,8 @@
 from django.db import models
-from simple_history.models import HistoricalRecords
-from django.db.models import (
-    CharField,
-    DecimalField,
-    DateTimeField,
-    BooleanField,
-)
+from django.db.models import (BooleanField, CharField, DateTimeField,
+                              DecimalField)
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
 
 class CurrencyValue(models.Model):

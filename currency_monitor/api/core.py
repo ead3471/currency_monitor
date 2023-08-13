@@ -1,10 +1,10 @@
-from dotenv import load_dotenv
+import logging
 import os
-import requests
 from dataclasses import dataclass
 from decimal import Decimal
-import logging
 
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 

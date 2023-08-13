@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from currencies.models import CurrencyValue
 from decimal import Decimal
+
+from currencies.models import CurrencyValue
+from rest_framework import serializers
 
 
 class HistoricalRecordSerializer(serializers.ModelSerializer):

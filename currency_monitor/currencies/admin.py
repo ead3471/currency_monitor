@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import CurrencyValue
 from simple_history.admin import SimpleHistoryAdmin
+
+from .models import CurrencyValue
 
 
 @admin.register(CurrencyValue)

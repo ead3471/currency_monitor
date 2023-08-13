@@ -1,37 +1,30 @@
+import logging
+from dataclasses import asdict
+
+from currencies.models import CurrencyValue
+from django.conf import settings
+from django.contrib.auth.views import LoginView as DefaultLoginView
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django_celery_beat.models import PeriodicTask
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from currencies.models import CurrencyValue
-from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from .serializers import (
-    HistoricalRecordSerializer,
-    GetCurrencyValueSerializer,
-    CurrencyDiffSerializer,
-    EnableRetrievingSerializer,
-    ForceRetrievingSerializer,
-    RetrieveForGivenCodesSerializer,
-    RegisterCurrencySerializer,
-    PatchCurrencySerializer,
-)
+from tasks import register_coin, retrieve_coins_rates, retrieve_data
+
 from .core import get_coin_rate
-from dataclasses import asdict
-from rest_framework.request import Request
-from drf_yasg.utils import swagger_auto_schema
-from django_celery_beat.models import PeriodicTask
-from django.conf import settings
-from tasks import retrieve_data, retrieve_coins_rates, register_coin
-from rest_framework.decorators import action
-
-from django.contrib.auth.views import LoginView as DefaultLoginView
-from django.urls import reverse_lazy
-from django.shortcuts import redirect
-from rest_framework.permissions import (
-    IsAuthenticatedOrReadOnly,
-    IsAuthenticated,
-)
-
-import logging
+from .serializers import (CurrencyDiffSerializer, EnableRetrievingSerializer,
+                          ForceRetrievingSerializer,
+                          GetCurrencyValueSerializer,
+                          HistoricalRecordSerializer, PatchCurrencySerializer,
+                          RegisterCurrencySerializer,
+                          RetrieveForGivenCodesSerializer)
 
 logger = logging.getLogger(__name__)
 
