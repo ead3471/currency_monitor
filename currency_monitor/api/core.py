@@ -105,16 +105,11 @@ def get_coins_info(coin_codes: list[str]) -> dict[str, CoinInfo]:
                     coin_code,
                     responce_json["crypto"][coin_code]["name"],
                 )
+
             else:
-                if coin_code in responce_json["fiat"]:
-                    result[coin_code] = CoinInfo(
-                        code=coin_code,
-                        name=responce_json["fiat"][coin_code],
-                    )
-                else:
-                    raise ValueError(
-                        f"Currency with code {coin_code} is not supported"
-                    )
+                raise ValueError(
+                    f"Currency with code {coin_code} is not supported"
+                )
     return result
 
 
