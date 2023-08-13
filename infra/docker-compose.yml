@@ -37,30 +37,30 @@ services:
       - ./.env 
 
 
-  back:
-    build:
-      context: ../currency_monitor
-      dockerfile: django.Dockerfile
-    restart: always
-    depends_on:
-      - db
-    env_file:
-      - ./.env
-    volumes:
-      - static_value:/app/staticfiles/
+  # back:
+  #   build:
+  #     context: ../currency_monitor
+  #     dockerfile: django.Dockerfile
+  #   restart: always
+  #   depends_on:
+  #     - db
+  #   env_file:
+  #     - ./.env
+  #   volumes:
+  #     - static_value:/app/staticfiles/
 
-  nginx:
-    build:
-      context: .
-      dockerfile: nginx.Dockerfile
-    ports:
-      - "8082:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - static_value:/usr/share/nginx/html/static/
-    container_name: nginx
-    depends_on:
-      - back
+  # nginx:
+  #   build:
+  #     context: .
+  #     dockerfile: nginx.Dockerfile
+  #   ports:
+  #     - "8082:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  #     - static_value:/usr/share/nginx/html/static/
+  #   container_name: nginx
+  #   depends_on:
+  #     - back
 
 volumes:
   db_value:
