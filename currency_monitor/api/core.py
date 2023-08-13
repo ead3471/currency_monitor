@@ -105,13 +105,8 @@ def get_coins_info(coin_codes: list[str]) -> dict[str, CoinInfo]:
                     coin_code,
                     responce_json["crypto"][coin_code]["name"],
                 )
-
             else:
                 raise ValueError(
                     f"Currency with code {coin_code} is not supported"
                 )
     return result
-
-
-if __name__ == "__main__":
-    get_coin_info("ADZ")

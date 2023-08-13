@@ -110,10 +110,8 @@ class RetrieveForGivenCodes(APIView):
     @swagger_auto_schema(
         request_body=RetrieveForGivenCodesSerializer,
         operation_description=(
-            (
-                "This is the POST endpoint to run a task that "
-                "fetches the rates for given in request currency codes"
-            ),
+            "This is the POST endpoint to run a task that "
+            "fetches the rates for given in request currency codes"
         ),
         responses={200: "Task started"},
     )
