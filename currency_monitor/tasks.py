@@ -8,8 +8,10 @@ from api.core import (
     get_coins_info,
 )
 
-from celery import shared_task
+from celery import shared_task, chord
 import logging
+
+from currency_monitor.settings import app
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "currency_monitor.settings")
@@ -108,3 +110,69 @@ def retrieve_coins_rates(coins_codes: list[str]):
                 tz=timezone.utc,
             )
             currency.save()
+
+
+@shared_task
+def do_something():
+    logger.debug("in here")
+
+
+from celery import Celery
+from celery import group
+from asyncio import sleep
+
+
+@app.task
+def test_task():
+    return "Test Result"
+
+
+@app.task
+def process_data(a: int, b: int, values: list[int]):
+    import random
+    import time
+
+    logger.debug(f"Process data:{a} {b} {values}")
+    result = []
+    for value in values:
+        result.append(value * 2)
+        sleep(random.uniform(0, 1))
+    return result
+
+
+@app.task
+def main_task():
+    data = list(range(50))
+    n = 4
+    a = 1
+    b = 2
+
+    args = [(a, b, data[i : i + n]) for i in range(0, len(data), n)]
+    logger.debug(f"Args len = {len(args)}")
+
+    # Create a list of subtasks using group
+    subtasks = [process_data.s(a, b, values) for a, b, values in args]
+
+    # subtask_results = group(subtasks).apply_async()
+    # combined_results = []
+    # for subtask in subtasks:
+    #     result = subtask_results.join_native(subtask)
+    #     if result.successful():
+    #         combined_results.extend(result.result)
+
+    # logger.debug(combined_results)
+    # Group subtasks and process their results with a callback using chord
+    result = chord(subtasks)(process_results.s())
+
+
+@app.task
+def process_results(results):
+    combined_results = []
+    for result in results:
+        combined_results.extend(result)
+    logger.debug(f" combined results = {combined_results}")
+
+
+if __name__ == "__main__":
+    result = test_task.delay()
+    print(result.get())

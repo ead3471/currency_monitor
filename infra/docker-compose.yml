@@ -16,6 +16,14 @@ services:
 
   redis:
     image: redis:6.0.9-alpine
+    ports: 
+      - 6379:6379
+    # entrypoint: >
+    #   /bin/sh -c "
+    #   apk update && apk add tzdata &&
+    #   cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime &&
+    #   echo 'Europe/Moscow' > /etc/timezone &&
+    #   redis-server"
 
   flower:
     image: mher/flower:0.9.7
@@ -24,6 +32,7 @@ services:
       - 5557:5555
     depends_on:
       - redis
+    
 
   worker:
     build:
@@ -35,6 +44,12 @@ services:
       - redis
     env_file:
       - ../.env 
+    # entrypoint: >
+    #   /bin/sh -c "
+    #   apt-get update && apt-get install tzdata &&
+    #   cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime &&
+    #   echo 'Europe/Moscow' > /etc/timezone &&
+    #   redis-server"
 
 
   back:
